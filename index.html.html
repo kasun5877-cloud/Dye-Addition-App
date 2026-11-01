@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dye Addition System</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4338ca;
+      --primary-light: #a5b4fc;
+      --success: #10b981;
+      --success-dark: #059669;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg: #0f172a;
+      --bg2: #1e293b;
+      --card: rgba(30, 41, 59, 0.85);
+      --card-border: rgba(99, 102, 241, 0.3);
+      --border: #334155;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --accent1: #ec4899;
+      --accent2: #06b6d4;
+      --accent3: #8b5cf6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #0f172a 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 10px;
+      font-size: 14px;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at 20% 30%, rgba(99,102,241,0.15) 0%, transparent 40%),
+                  radial-gradient(circle at 80% 70%, rgba(236,72,153,0.12) 0%, transparent 40%),
+                  radial-gradient(circle at 50% 50%, rgba(6,182,212,0.08) 0%, transparent 50%);
+      animation: bgPulse 12s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes bgPulse {
+      0% { transform: translate(0,0) scale(1); }
+      100% { transform: translate(-3%, 2%) scale(1.05); }
+    }
+    #appContent { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 16px 0 8px;
+      animation: fadeSlideDown 0.6s ease-out;
+    }
+    .header h1 {
+      font-size: 1.4rem;
+      background: linear-gradient(90deg, #a5b4fc, #f9a8d4, #67e8f9, #a5b4fc);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease infinite;
+      margin-bottom: 4px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 0.78rem;
+      animation: fadeIn 0.8s ease 0.2s both;
+    }
+    @keyframes fadeSlideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 14px 0 16px;
+      flex-wrap: wrap;
+      animation: fadeSlideDown 0.5s ease 0.15s both;
+    }
+    .tab-btn {
+      padding: 10px 18px;
+      border: 2px solid transparent;
+      background: rgba(30,41,59,0.7);
+      color: var(--muted);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+      flex: 1;
+      max-width: 170px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--primary), var(--accent1));
+      opacity: 0;
+      transition: opacity 0.3s;
+      border-radius: 999px;
+    }
+    .tab-btn span { position: relative; z-index: 1; }
+    .tab-btn.active {
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.45);
+      transform: scale(1.03);
+    }
+    .tab-btn.active::before { opacity: 1; }
+    .tab-btn:not(.active):hover {
+      border-color: var(--primary-light);
+      color: var(--primary-light);
+      transform: translateY(-2px);
+    }
+    .tab-btn:active { transform: scale(0.97); }
+
+    .panel { display: none; max-width: 100%; margin: 0 auto; }
+    .panel.active {
+      display: block;
+      animation: panelIn 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05);
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid var(--card-border);
+      animation: cardPop 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.12s; }
+    .card:nth-child(3) { animation-delay: 0.19s; }
+    @keyframes cardPop {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .card:hover {
+      box-shadow: 0 8px 32px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .card h2 {
+      font-size: 0.95rem;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-light);
+      font-weight: 700;
+    }
+
+    .size-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .size-row label {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--accent2);
+    }
+    .size-row input {
+      width: 120px;
+      padding: 10px 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(15,23,42,0.6);
+      color: #fff;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .size-row input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.3);
+    }
+
+    /* Tables */
+    .dye-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .dye-table th {
+      background: linear-gradient(135deg, rgba(99,102,241,0.25), rgba(139,92,246,0.2));
+      color: var(--primary-light);
+      padding: 8px 4px;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 2px solid var(--primary);
+      white-space: nowrap;
+      font-size: 0.7rem;
+    }
+    .dye-table td {
+      padding: 6px 3px;
+      border-bottom: 1px solid rgba(51,65,85,0.6);
+      vertical-align: middle;
+    }
+    .dye-table tr {
+      transition: background 0.2s;
+      animation: rowIn 0.3s ease both;
+    }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .dye-table tr:hover { background: rgba(99,102,241,0.08); }
+    .dye-table select, .dye-table input {
+      width: 100%;
+      padding: 8px 6px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.78rem;
+      background: rgba(15,23,42,0.7);
+      color: #e2e8f0;
+      min-height: 38px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .dye-table select:focus, .dye-table input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(99,102,241,0.35);
+    }
+    .dye-table input[type="number"] { text-align: right; }
+    .dye-table select option { background: #1e293b; color: #e2e8f0; }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 10px 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-height: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(255,255,255,0.15), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .btn:hover::after { opacity: 1; }
+    .btn:active { transform: scale(0.96); }
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 20px rgba(99,102,241,0.55); transform: translateY(-1px); }
+    .btn-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+    }
+    .btn-success:hover { box-shadow: 0 6px 18px rgba(16,185,129,0.5); transform: translateY(-1px); }
+    .btn-warning {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+    }
+    .btn-warning:hover { box-shadow: 0 6px 18px rgba(245,158,11,0.5); transform: translateY(-1px); }
+    .btn-danger {
+      background: rgba(239,68,68,0.15);
+      color: #f87171;
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.25); }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-outline:hover {
+      border-color: var(--primary-light);
+      color: var(--primary-light);
+    }
+    .btn-recall {
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(6,182,212,0.35);
+    }
+    .btn-recall:hover { box-shadow: 0 6px 18px rgba(6,182,212,0.5); transform: translateY(-1px); }
+
+    /* Results */
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.72rem;
+      margin-top: 6px;
+    }
+    .result-table th {
+      background: linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.15));
+      color: #6ee7b7;
+      padding: 8px 4px;
+      text-align: left;
+      font-weight: 700;
+      border-bottom: 2px solid var(--success);
+      white-space: nowrap;
+      font-size: 0.68rem;
+    }
+    .result-table td {
+      padding: 7px 4px;
+      border-bottom: 1px solid rgba(51,65,85,0.5);
+    }
+    .result-table tr {
+      animation: rowIn 0.35s ease both;
+    }
+    .result-table tr:nth-child(even) { background: rgba(15,23,42,0.4); }
+    .result-table tr:hover { background: rgba(16,185,129,0.08); }
+    .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .positive { color: #34d399; font-weight: 700; }
+    .negative { color: #f87171; font-weight: 700; }
+    .empty-msg {
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+      font-size: 0.85rem;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 18px 12px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      animation: fadeIn 1s ease 0.5s both;
+    }
+    .footer .made-by {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #a5b4fc, #f9a8d4, #67e8f9, #c4b5fd, #a5b4fc);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 3.5s ease infinite, pulseGlow 2s ease-in-out infinite alternate;
+    }
+    @keyframes pulseGlow {
+      0% { filter: drop-shadow(0 0 2px rgba(165,180,252,0.3)); transform: scale(1); }
+      100% { filter: drop-shadow(0 0 8px rgba(249,168,212,0.5)); transform: scale(1.03); }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: linear-gradient(135deg, #1e293b, #312e81);
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+      border: 1px solid rgba(99,102,241,0.4);
+      z-index: 999;
+      opacity: 0;
+      transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* Mobile - full results visibility + compact tables */
+    @media (max-width: 700px) {
+      .dye-table th:nth-child(3),
+      .dye-table td:nth-child(3) { min-width: 58px; }
+      .dye-table th:nth-child(4),
+      .dye-table td:nth-child(4) { min-width: 58px; }
+      .result-table { font-size: 0.65rem; }
+      .result-table th { font-size: 0.58rem; padding: 6px 3px; white-space: normal; line-height: 1.15; }
+      .result-table td { padding: 5px 3px; }
+      .result-table th:first-child,
+      .result-table td:first-child {
+        position: sticky;
+        left: 0;
+        background: #1e293b;
+        z-index: 2;
+        min-width: 72px;
+        max-width: 90px;
+        box-shadow: 2px 0 4px rgba(0,0,0,0.25);
+      }
+      .result-table th:first-child { background: linear-gradient(135deg, rgba(16,185,129,0.35), rgba(6,182,212,0.2)); }
+    }
+    @media (max-width: 400px) {
+      body { padding: 6px; font-size: 13px; }
+      .header h1 { font-size: 1.2rem; }
+      .tab-btn { padding: 9px 12px; font-size: 0.78rem; }
+      .card { padding: 12px; border-radius: 14px; margin-bottom: 12px; }
+      .card h2 { font-size: 0.88rem; }
+      .dye-table { font-size: 0.68rem; }
+      .dye-table th { font-size: 0.62rem; padding: 6px 2px; }
+      .dye-table td { padding: 5px 2px; }
+      .dye-table select, .dye-table input { padding: 7px 4px; font-size: 0.72rem; min-height: 36px; }
+      .btn { padding: 9px 12px; font-size: 0.75rem; min-height: 38px; }
+      .size-row input { width: 100px; padding: 9px 8px; font-size: 1rem; }
+      .result-table { font-size: 0.6rem; }
+      .result-table th { font-size: 0.55rem; padding: 5px 2px; }
+      .result-table td { padding: 4px 2px; }
+      .result-table th:first-child,
+      .result-table td:first-child { min-width: 64px; max-width: 80px; }
+    }
+    /* Make result scroll area more visible on phone */
+    .result-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -4px;
+      padding: 0 4px 4px;
+      scrollbar-width: thin;
+    }
+  </style>
+</head>
+<body>
+  <div id="appContent">
+  <div class="header">
+    <h1>🧪 Dye Addition System</h1>
+    <p>Batch & Lab Dip Dye Addition Calculator</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('batch')"><span>📦 Batch</span></button>
+    <button class="tab-btn" onclick="switchTab('lab')"><span>🔬 Lab Dip</span></button>
+  </div>
+
+  <!-- ========== BATCH PANEL ========== -->
+  <div id="batch" class="panel active">
+    <div class="card">
+      <h2>⚖️ Batch Weight</h2>
+      <div class="size-row">
+        <label for="batchSize">BATCH WEIGHT (kg)</label>
+        <input type="number" id="batchSize" value="65.5" step="0.1" min="0" oninput="calcBatch()" enterkeyhint="next">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📥 Input Data</h2>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="dye-table" id="batchInputTable">
+          <thead>
+            <tr>
+              <th style="width:28%">Dye Name</th>
+              <th style="width:18%">Recipe %</th>
+              <th style="width:18%">LD or MB %</th>
+              <th style="width:18%">PA Reading</th>
+              <th style="width:10%"></th>
+            </tr>
+          </thead>
+          <tbody id="batchRows"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addBatchRow()">➕ Add Dye</button>
+        <button class="btn btn-outline" onclick="resetBatchPct()">↺ Reset %</button>
+        <button class="btn btn-outline" onclick="clearBatch()">🗑 Clear All</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Calculation Results</h2>
+      <div class="result-scroll">
+        <table class="result-table" id="batchResultTable">
+          <thead>
+            <tr>
+              <th>Dye Name</th>
+              <th>අඩු %</th>
+              <th>Pick up %</th>
+              <th>Add %</th>
+              <th>Orig (g)</th>
+              <th>Add (g)</th>
+            </tr>
+          </thead>
+          <tbody id="batchResults">
+            <tr><td colspan="6" class="empty-msg">Dye data ඇතුළත් කරන්න</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== LAB DIP PANEL ========== -->
+  <div id="lab" class="panel">
+    <div class="card">
+      <h2>⚖️ Fabric Weight</h2>
+      <div class="size-row">
+        <label for="fabricWeight">FABRIC WEIGHT (g)</label>
+        <input type="number" id="fabricWeight" value="20" step="0.1" min="0" oninput="calcLab()" enterkeyhint="next">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📥 Input Data</h2>
+      <div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+        <table class="dye-table" id="labInputTable">
+          <thead>
+            <tr>
+              <th style="width:28%">Dye Name</th>
+              <th style="width:18%">Recipe %</th>
+              <th style="width:18%">STD %</th>
+              <th style="width:18%">PA Reading</th>
+              <th style="width:10%"></th>
+            </tr>
+          </thead>
+          <tbody id="labRows"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addLabRow()">➕ Add Dye</button>
+        <button class="btn btn-outline" onclick="resetLabPct()">↺ Reset %</button>
+        <button class="btn btn-outline" onclick="clearLab()">🗑 Clear All</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Calculation Results</h2>
+      <div class="result-scroll">
+        <table class="result-table" id="labResultTable">
+          <thead>
+            <tr>
+              <th>Dye Name</th>
+              <th>අඩු %</th>
+              <th>Pick up %</th>
+              <th>Add %</th>
+              <th>Orig (mg)</th>
+              <th>Add (mg)</th>
+              <th>Total (mg)</th>
+            </tr>
+          </thead>
+          <tbody id="labResults">
+            <tr><td colspan="7" class="empty-msg">Dye data ඇතුළත් කරන්න</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Dye Addition System • Offline Web App<br>
+    <span class="made-by">✦ Made by Kasun 6174 ✦</span>
+  </div>
+  </div><!-- end appContent -->
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const DYE_LIST = [
+      "BEMACID GREEN F-2B","BEST ACID SUPRA BRILL BLUE SF - GW","ERIONYL TUROUOISE AG",
+      "Everacid Orange S-GSN","EVERACID RED S-GWN","Everacid Yellow S-4GL",
+      "EVERSET BLACK MB","EVERSET BLUE M-2R","EVERSET BROWN M-B","EVERSET GRAY MG",
+      "EVERSET NAVY M-R","EVERSET RED M-G","EVERSET YELLOW M-2R",
+      "ISOLAN BLUE N-HFS","ISOLAN GREY N-HFS","ISOLAN GREY NHF- S","ISOLAN OLIVE 2S-BGL","ISOLAN RED NHFS",
+      "LANASET GREEN B","LANASYN BRILLIANT BLUE F-CLA","LANASYN TURQUOISE SD-5G",
+      "LAVASET BORDEAUX B","LAVASET GREEN B","LAVASET VIOLET B",
+      "LEVASET BORDEAUX B","LEVASET GREEN B","LEVASET VIOLET B",
+      "NYLOSAN BRILL GREEN F6GLN","NYLOSAN BRILLIANT BLUE F-CLA","NYLOSAN RED E-BNLC",
+      "NYLOSAN RED N-2RBL","NYLOSAN RED S-GS","NYLOSAN RHODAMINE EB","NYLOSAN VIOLET E-2R",
+      "TECTILON BLUE 4R","TECTILON RED 2B","TECTILON YELLOW 3R",
+      "TELON BLUE 4R","TELON BLUE A-2R","TELON BLUE GGL","TELON BLUE M-2R",
+      "TELON BLUE M-GLW","TELON BLUE M-RLW","TELON BLUE RR","TELON FLAVINE M7G",
+      "TELON GREEN M-6GW","TELON ORANGE M-GSN","TELON RED A-FG","TELON RED A2FR",
+      "TELON RED BRL","TELON RED F-RL","TELON RED M-3B","TELON RED M-BL",
+      "TELON RED M-GWN","TELON RED M-R","TELON RHODAMINE M-BN","TELON TURQUOISE M-5G",
+      "TELON VIOLET M-RWN","TELON YELLOW 4R","TELON YELLOW A-3R","TELON YELLOW F-G","TELON YELLOW M-4GL",
+      "ASTRAZON FLAVINE 10 GFF","BEZACRYL GOLDEN YELLOW GL","DAYCRYLAL YELLOW 5GL",
+      "CORACRYL GOLDEN YELLOW CGL","TAIACRYL YELLOW 4GN-T","TAIACRYL GOLDEN YELLOW BR-T",
+      "ASTRAZON YELLOW 7GLL","ASTRAZON RED GTLN","BEZACRYL RED GRL","CORACRYL RED C4G",
+      "TAIACRYL RED FBL-T","TAIACRYL RED GTL-T","TAIACRYL BRILLENT PINK CD-BHT",
+      "ASTRAZON RED GLN","TAIACRYL RED 2GLT","TAIACRYL BRILLENT RED 6BNT","ASTRAZON RED FBL",
+      "BEZACRYL BLUE FBS","BEZACRYL BLUE BG","BEZACRYL BLUE GRL",
+      "TAIACRYL BLUE FBL-T","TAIACRYL BLUE GRF-T","TAIACRYL BLUE RGN-T",
+      "TAIACRYL BLUE 5G-T","TAIACRYL BLUE F-2R-T","ASTRAZON BLUE FGRL","ASTRAZON BLUE FGGL",
+      "CORACRYL BLACK FDL"
+    ];
+
+    function dyeOptions(selected) {
+      let html = '<option value="">-- Select Dye --</option>';
+      DYE_LIST.forEach(d => {
+        html += `<option value="${d}" ${d === selected ? 'selected' : ''}>${d}</option>`;
+      });
+      html += `<option value="__custom__">✏️ Custom / Other...</option>`;
+      return html;
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tab).classList.add('active');
+      const btns = document.querySelectorAll('.tab-btn');
+      btns.forEach(b => {
+        if ((tab === 'batch' && b.textContent.includes('Batch')) ||
+            (tab === 'lab' && b.textContent.includes('Lab'))) {
+          b.classList.add('active');
+        }
+      });
+    }
+
+    // ---------- ENTER KEY NAVIGATION (vertical / down column) ----------
+    function focusAndSelect(el) {
+      if (!el) return;
+      el.focus();
+      try { el.select(); } catch (_) {}
+    }
+
+    function getColType(inp) {
+      const id = (inp && inp.id) || '';
+      if (id.includes('pct-')) return 'pct';
+      if (id.includes('mb-')) return 'mb';
+      if (id.includes('pa-')) return 'pa';
+      return null;
+    }
+
+    function bindEnterOnRow(tr) {
+      const tbody = tr.parentElement;
+      if (!tbody) return;
+
+      const inputs = tr.querySelectorAll('input[type="number"]');
+      inputs.forEach(inp => {
+        // Remove old listeners if any by cloning (safe for re-bind)
+        const handler = function(e) {
+          if (e.key !== 'Enter' && e.keyCode !== 13) return;
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+
+          const allRows = Array.from(tbody.querySelectorAll('tr'));
+          const rowIdx = allRows.indexOf(tr);
+          if (rowIdx < 0) return;
+
+          const col = getColType(inp);
+          if (!col) return;
+
+          // 1) Always try NEXT ROW, SAME COLUMN first (pallehata / vertical)
+          if (rowIdx < allRows.length - 1) {
+            const nextRow = allRows[rowIdx + 1];
+            const nextSame = nextRow.querySelector(`input[id*="${col}-"]`);
+            if (nextSame) {
+              focusAndSelect(nextSame);
+              return;
+            }
+          }
+
+          // 2) Last row of this column → jump to first row of next column
+          const order = ['pct', 'mb', 'pa'];
+          const myIdx = order.indexOf(col);
+          if (myIdx >= 0 && myIdx < order.length - 1) {
+            const nextCol = order[myIdx + 1];
+            const firstNext = allRows[0].querySelector(`input[id*="${nextCol}-"]`);
+            if (firstNext) {
+              focusAndSelect(firstNext);
+              return;
+            }
+          }
+
+          // 3) Fallback: next number input in document order
+          const allNums = Array.from(tbody.querySelectorAll('input[type="number"]'));
+          const i = allNums.indexOf(inp);
+          if (i >= 0 && i < allNums.length - 1) {
+            focusAndSelect(allNums[i + 1]);
+          }
+        };
+
+        // Use capture so it wins over other handlers
+        inp.addEventListener('keydown', handler, true);
+        inp.addEventListener('keypress', handler, true);
+      });
+    }
+
+    // ---------- BATCH ----------
+    let batchRowCount = 0;
+
+    function addBatchRow(name, pct, mb, pa) {
+      const tbody = document.getElementById('batchRows');
+      const id = batchRowCount++;
+      const tr = document.createElement('tr');
+      tr.id = 'brow-' + id;
+      tr.style.animationDelay = (id * 0.05) + 's';
+      tr.innerHTML = `
+        <td>
+          <select onchange="onDyeSelect(this, 'bname-${id}')">${dyeOptions(name || '')}</select>
+          <input type="text" id="bname-${id}" placeholder="Custom dye name" style="display:none;margin-top:4px"
+                 value="${name && !DYE_LIST.includes(name) ? name : ''}" oninput="calcBatch()">
+        </td>
+        <td><input type="number" id="bpct-${id}" value="${pct ?? ''}" step="any" oninput="calcBatch()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><input type="number" id="bmb-${id}" value="${mb ?? ''}" step="any" oninput="calcBatch()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><input type="number" id="bpa-${id}" value="${pa ?? ''}" step="any" oninput="calcBatch()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><button class="btn btn-danger" style="padding:6px 10px;font-size:0.75rem;min-height:34px" onclick="removeBatchRow(${id})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      if (name && !DYE_LIST.includes(name)) {
+        const sel = tr.querySelector('select');
+        sel.value = '__custom__';
+        document.getElementById('bname-' + id).style.display = 'block';
+      }
+      bindEnterOnRow(tr);
+      calcBatch();
+    }
+
+    function onDyeSelect(sel, inputId) {
+      const inp = document.getElementById(inputId);
+      if (sel.value === '__custom__') {
+        inp.style.display = 'block';
+        inp.focus();
+      } else {
+        inp.style.display = 'none';
+        inp.value = sel.value;
+      }
+      calcBatch();
+      calcLab();
+    }
+
+    function removeBatchRow(id) {
+      const el = document.getElementById('brow-' + id);
+      if (el) {
+        el.style.transition = 'opacity 0.25s, transform 0.25s';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-20px)';
+        setTimeout(() => { el.remove(); calcBatch(); }, 250);
+      }
+    }
+
+    function clearBatch() {
+      document.getElementById('batchRows').innerHTML = '';
+      batchRowCount = 0;
+      calcBatch();
+      showToast('🗑 Batch cleared');
+    }
+
+    function resetBatchPct() {
+      document.querySelectorAll('#batchRows tr').forEach(tr => {
+        const id = tr.id.replace('brow-', '');
+        const pct = document.getElementById('bpct-' + id);
+        const mb  = document.getElementById('bmb-' + id);
+        const pa  = document.getElementById('bpa-' + id);
+        if (pct) pct.value = 0;
+        if (mb)  mb.value  = 0;
+        if (pa)  pa.value  = 0;
+      });
+      calcBatch();
+      showToast('↺ Reset % — values → 0 (names kept)');
+    }
+
+    function getBatchRows() {
+      const rows = [];
+      document.querySelectorAll('#batchRows tr').forEach(tr => {
+        const id = tr.id.replace('brow-', '');
+        const sel = tr.querySelector('select');
+        let name = sel.value === '__custom__'
+          ? document.getElementById('bname-' + id).value.trim()
+          : sel.value;
+        const pct = parseFloat(document.getElementById('bpct-' + id).value);
+        const mb  = parseFloat(document.getElementById('bmb-' + id).value);
+        const pa  = parseFloat(document.getElementById('bpa-' + id).value);
+        rows.push({ name, pct, mb, pa });
+      });
+      return rows;
+    }
+
+    function calcBatch() {
+      const batchSize = parseFloat(document.getElementById('batchSize').value) || 0;
+      const rows = getBatchRows();
+      const tbody = document.getElementById('batchResults');
+      let html = '';
+      let hasData = false;
+
+      rows.forEach((r, i) => {
+        if (!r.name && (isNaN(r.pct) || isNaN(r.mb) || isNaN(r.pa))) return;
+        hasData = true;
+
+        let adu = '', pickup = '', addPct = '', orig = '', addition = '';
+
+        if (!isNaN(r.mb) && r.mb !== 0 && !isNaN(r.pa)) {
+          adu = ((r.mb - r.pa) / r.mb) * 100;
+        }
+        if (!isNaN(r.pct) && r.pct !== 0 && !isNaN(r.pa)) {
+          pickup = (r.pa / r.pct) * 100;
+        }
+
+        // Addition % = (Adu % / Pick up %) * 100
+        if (adu !== '' && pickup !== '' && pickup !== 0) {
+          addPct = (adu / pickup) * 100;
+        }
+
+        if (!isNaN(r.pct) && batchSize > 0) {
+          orig = (r.pct / 100) * batchSize * 1000;
+        }
+        if (addPct !== '' && orig !== '') {
+          addition = (addPct / 100) * orig;
+        }
+
+        const fmt = (v, d=4) => v === '' || isNaN(v) ? '—' : Number(v).toFixed(d);
+        const cls = (v) => v === '' || isNaN(v) ? '' : (v >= 0 ? 'positive' : 'negative');
+
+        html += `<tr style="animation-delay:${i*0.04}s">
+          <td>${r.name || '—'}</td>
+          <td class="num ${cls(adu)}">${fmt(adu)}</td>
+          <td class="num">${fmt(pickup)}</td>
+          <td class="num ${cls(addPct)}">${fmt(addPct)}</td>
+          <td class="num">${fmt(orig, 3)}</td>
+          <td class="num ${cls(addition)}">${fmt(addition, 3)}</td>
+        </tr>`;
+      });
+
+      tbody.innerHTML = hasData ? html : '<tr><td colspan="6" class="empty-msg">Dye data ඇතුළත් කරන්න</td></tr>';
+    }
+
+    // ---------- LAB DIP ----------
+    let labRowCount = 0;
+
+    function addLabRow(name, pct, mb, pa) {
+      const tbody = document.getElementById('labRows');
+      const id = labRowCount++;
+      const tr = document.createElement('tr');
+      tr.id = 'lrow-' + id;
+      tr.style.animationDelay = (id * 0.05) + 's';
+      tr.innerHTML = `
+        <td>
+          <select onchange="onDyeSelect(this, 'lname-${id}')">${dyeOptions(name || '')}</select>
+          <input type="text" id="lname-${id}" placeholder="Custom dye name" style="display:none;margin-top:4px"
+                 value="${name && !DYE_LIST.includes(name) ? name : ''}" oninput="calcLab()">
+        </td>
+        <td><input type="number" id="lpct-${id}" value="${pct ?? ''}" step="any" oninput="calcLab()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><input type="number" id="lmb-${id}" value="${mb ?? ''}" step="any" oninput="calcLab()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><input type="number" id="lpa-${id}" value="${pa ?? ''}" step="any" oninput="calcLab()" enterkeyhint="next" inputmode="decimal"></td>
+        <td><button class="btn btn-danger" style="padding:6px 10px;font-size:0.75rem;min-height:34px" onclick="removeLabRow(${id})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      if (name && !DYE_LIST.includes(name)) {
+        const sel = tr.querySelector('select');
+        sel.value = '__custom__';
+        document.getElementById('lname-' + id).style.display = 'block';
+      }
+      bindEnterOnRow(tr);
+      calcLab();
+    }
+
+    function removeLabRow(id) {
+      const el = document.getElementById('lrow-' + id);
+      if (el) {
+        el.style.transition = 'opacity 0.25s, transform 0.25s';
+        el.style.opacity = '0';
+        el.style.transform = 'translateX(-20px)';
+        setTimeout(() => { el.remove(); calcLab(); }, 250);
+      }
+    }
+
+    function clearLab() {
+      document.getElementById('labRows').innerHTML = '';
+      labRowCount = 0;
+      calcLab();
+      showToast('🗑 Lab Dip cleared');
+    }
+
+    function resetLabPct() {
+      document.querySelectorAll('#labRows tr').forEach(tr => {
+        const id = tr.id.replace('lrow-', '');
+        const pct = document.getElementById('lpct-' + id);
+        const mb  = document.getElementById('lmb-' + id);
+        const pa  = document.getElementById('lpa-' + id);
+        if (pct) pct.value = 0;
+        if (mb)  mb.value  = 0;
+        if (pa)  pa.value  = 0;
+      });
+      calcLab();
+      showToast('↺ Reset % — values → 0 (names kept)');
+    }
+
+    function getLabRows() {
+      const rows = [];
+      document.querySelectorAll('#labRows tr').forEach(tr => {
+        const id = tr.id.replace('lrow-', '');
+        const sel = tr.querySelector('select');
+        let name = sel.value === '__custom__'
+          ? document.getElementById('lname-' + id).value.trim()
+          : sel.value;
+        const pct = parseFloat(document.getElementById('lpct-' + id).value);
+        const mb  = parseFloat(document.getElementById('lmb-' + id).value);
+        const pa  = parseFloat(document.getElementById('lpa-' + id).value);
+        rows.push({ name, pct, mb, pa });
+      });
+      return rows;
+    }
+
+    function calcLab() {
+      const fabricWt = parseFloat(document.getElementById('fabricWeight').value) || 0;
+      const rows = getLabRows();
+      const tbody = document.getElementById('labResults');
+      let html = '';
+      let hasData = false;
+
+      rows.forEach((r, i) => {
+        if (!r.name && (isNaN(r.pct) || isNaN(r.mb) || isNaN(r.pa))) return;
+        hasData = true;
+
+        let adu = '', pickup = '', addPct = '', orig = '', addition = '', total = '';
+
+        if (!isNaN(r.mb) && r.mb !== 0 && !isNaN(r.pa)) {
+          adu = ((r.mb - r.pa) / r.mb) * 100;
+        }
+        if (!isNaN(r.pct) && r.pct !== 0 && !isNaN(r.pa)) {
+          pickup = (r.pa / r.pct) * 100;
+        }
+
+        // Addition % = (Adu % / Pick up %) * 100
+        if (adu !== '' && pickup !== '' && pickup !== 0) {
+          addPct = (adu / pickup) * 100;
+        }
+
+        if (!isNaN(r.pct) && fabricWt > 0) {
+          orig = (r.pct / 100) * fabricWt * 1000; // mg
+        }
+        if (addPct !== '' && orig !== '') {
+          addition = (addPct / 100) * orig;
+        }
+        if (orig !== '' && addition !== '') {
+          total = orig + addition;
+        } else if (orig !== '') {
+          total = orig;
+        }
+
+        const fmt = (v, d=4) => v === '' || isNaN(v) ? '—' : Number(v).toFixed(d);
+        const cls = (v) => v === '' || isNaN(v) ? '' : (v >= 0 ? 'positive' : 'negative');
+
+        html += `<tr style="animation-delay:${i*0.04}s">
+          <td>${r.name || '—'}</td>
+          <td class="num ${cls(adu)}">${fmt(adu)}</td>
+          <td class="num">${fmt(pickup)}</td>
+          <td class="num ${cls(addPct)}">${fmt(addPct)}</td>
+          <td class="num">${fmt(orig, 3)}</td>
+          <td class="num ${cls(addition)}">${fmt(addition, 3)}</td>
+          <td class="num ${cls(total)}" style="font-weight:700">${fmt(total, 3)}</td>
+        </tr>`;
+      });
+
+      tbody.innerHTML = hasData ? html : '<tr><td colspan="7" class="empty-msg">Dye data ඇතුළත් කරන්න</td></tr>';
+    }
+
+    function loadSampleData() {
+      addBatchRow('EVERSET YELLOW M-2R', 2.2902, 1.8552, 1.763);
+      addBatchRow('EVERSET RED M-G', 0.6262, 0.6767, 0.652);
+      addBatchRow('EVERSET GRAY MG', 1.0819, 1.569, 1.499);
+
+      addLabRow('EVERSET YELLOW M-2R', 0.875, 1.65, 1.3168);
+      addLabRow('EVERSET RED M-G', 0.475, 0.6782, 0.6564);
+      addLabRow('EVERSET GRAY MG', 0.76, 0.8492, 0.9545);
+    }
+
+    function bindSizeEnter(sizeId, tbodyId) {
+      const el = document.getElementById(sizeId);
+      if (!el) return;
+      const goFirstPct = function(e) {
+        if (e.key !== 'Enter' && e.keyCode !== 13) return;
+        e.preventDefault();
+        const first = document.querySelector('#' + tbodyId + ' input[id*="pct-"]');
+        if (first) focusAndSelect(first);
+      };
+      el.addEventListener('keydown', goFirstPct);
+      el.addEventListener('keypress', goFirstPct);
+    }
+
+    window.onload = function() {
+      loadSampleData();
+      bindSizeEnter('batchSize', 'batchRows');
+      bindSizeEnter('fabricWeight', 'labRows');
+    };
+  </script>
+</body>
+</html>
